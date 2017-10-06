@@ -158,7 +158,7 @@ func (o *OpsGenerator) generateGCPOps(state storage.State) ([]op, error) {
 
 	if state.LB.Type == "cf" {
 		ops = append(ops, createOp("replace", "/vm_extensions/-", lb{
-			Name: "cf-router-network-properties",
+			Name: "cf-router-and-ssh-network-properties",
 			CloudProperties: lbCloudProperties{
 				BackendService: terraformOutputs["router_backend_service"].(string),
 				TargetPool:     terraformOutputs["ws_target_pool"].(string),
@@ -169,15 +169,27 @@ func (o *OpsGenerator) generateGCPOps(state storage.State) ([]op, error) {
 			},
 		}))
 
-		ops = append(ops, createOp("replace", "/vm_extensions/-", lb{
-			Name: "diego-ssh-proxy-network-properties",
-			CloudProperties: lbCloudProperties{
-				TargetPool: terraformOutputs["ssh_proxy_target_pool"].(string),
-				Tags: []string{
-					terraformOutputs["ssh_proxy_target_pool"].(string),
-				},
-			},
-		}))
+		// ops = append(ops, createOp("replace", "/vm_extensions/-", lb{
+		// 	Name: "cf-router-network-properties",
+		// 	CloudProperties: lbCloudProperties{
+		// 		BackendService: terraformOutputs["router_backend_service"].(string),
+		// 		TargetPool:     terraformOutputs["ws_target_pool"].(string),
+		// 		Tags: []string{
+		// 			terraformOutputs["router_backend_service"].(string),
+		// 			terraformOutputs["ws_target_pool"].(string),
+		// 		},
+		// 	},
+		// }))
+
+		// ops = append(ops, createOp("replace", "/vm_extensions/-", lb{
+		// 	Name: "diego-ssh-proxy-network-properties",
+		// 	CloudProperties: lbCloudProperties{
+		// 		TargetPool: terraformOutputs["ssh_proxy_target_pool"].(string),
+		// 		Tags: []string{
+		// 			terraformOutputs["ssh_proxy_target_pool"].(string),
+		// 		},
+		// 	},
+		// }))
 
 		ops = append(ops, createOp("replace", "/vm_extensions/-", lb{
 			Name: "cf-tcp-router-network-properties",

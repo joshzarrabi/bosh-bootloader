@@ -15,7 +15,7 @@ output "router_lb_ip" {
 }
 
 output "ssh_proxy_lb_ip" {
-    value = "${google_compute_address.cf-ssh-proxy.address}"
+    value = "${google_compute_address.cf-ws.address}"
 }
 
 output "tcp_router_lb_ip" {
@@ -121,14 +121,6 @@ resource "google_compute_firewall" "cf-health-check" {
   target_tags   = ["${google_compute_backend_service.router-lb-backend-service.name}"]
 }
 
-output "ssh_proxy_target_pool" {
-  value = "${google_compute_target_pool.cf-ssh-proxy.name}"
-}
-
-resource "google_compute_address" "cf-ssh-proxy" {
-  name = "${var.env_id}-cf-ssh-proxy"
-}
-
 resource "google_compute_firewall" "cf-ssh-proxy" {
   name       = "${var.env_id}-cf-ssh-proxy-open"
   depends_on = ["google_compute_network.bbl-network"]
@@ -138,22 +130,7 @@ resource "google_compute_firewall" "cf-ssh-proxy" {
     protocol = "tcp"
     ports    = ["2222"]
   }
-
-  target_tags = ["${google_compute_target_pool.cf-ssh-proxy.name}"]
-}
-
-resource "google_compute_target_pool" "cf-ssh-proxy" {
-  name = "${var.env_id}-cf-ssh-proxy"
-
-  session_affinity = "NONE"
-}
-
-resource "google_compute_forwarding_rule" "cf-ssh-proxy" {
-  name        = "${var.env_id}-cf-ssh-proxy"
-  target      = "${google_compute_target_pool.cf-ssh-proxy.self_link}"
-  port_range  = "2222"
-  ip_protocol = "TCP"
-  ip_address  = "${google_compute_address.cf-ssh-proxy.address}"
+  target_tags = ["${google_compute_target_pool.cf-ws.name}"]
 }
 
 output "tcp_router_target_pool" {
@@ -215,6 +192,14 @@ resource "google_compute_target_pool" "cf-ws" {
   session_affinity = "NONE"
 
   health_checks = ["${google_compute_http_health_check.cf-public-health-check.name}"]
+}
+
+resource "google_compute_forwarding_rule" "cf-ssh-proxy" {
+  name        = "${var.env_id}-cf-ssh-proxy"
+  target      = "${google_compute_target_pool.cf-ws.self_link}"
+  port_range  = "2222"
+  ip_protocol = "TCP"
+  ip_address  = "${google_compute_address.cf-ws.address}"
 }
 
 resource "google_compute_forwarding_rule" "cf-ws-https" {

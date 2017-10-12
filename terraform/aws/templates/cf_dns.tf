@@ -20,16 +20,7 @@ resource "aws_route53_record" "wildcard_dns" {
   type    = "CNAME"
   ttl     = 300
 
-  records = ["${aws_elb.cf_router_lb.dns_name}"]
-}
-
-resource "aws_route53_record" "ssh" {
-  zone_id = "${aws_route53_zone.env_dns_zone.id}"
-  name    = "ssh.${var.system_domain}"
-  type    = "CNAME"
-  ttl     = 300
-
-  records = ["${aws_elb.cf_ssh_lb.dns_name}"]
+  records = ["${aws_elb.cf_router_and_ssh_lb.dns_name}"]
 }
 
 resource "aws_route53_record" "bosh" {

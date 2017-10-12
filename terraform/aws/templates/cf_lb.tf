@@ -1,89 +1,4 @@
-resource "aws_security_group" "cf_ssh_lb_security_group" {
-  description = "{{.SSHLBDescription}}"
-  vpc_id      = "${aws_vpc.vpc.id}"
-
-  ingress {
-    cidr_blocks = ["0.0.0.0/0"]
-    protocol    = "tcp"
-    from_port   = 2222
-    to_port     = 2222
-  }
-
-  egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags {
-    Name = "${var.env_id}-cf-ssh-lb-security-group"
-  }
-}
-
-output "cf_ssh_lb_security_group" {
-  value="${aws_security_group.cf_ssh_lb_security_group.id}"
-}
-
-resource "aws_security_group" "cf_ssh_lb_internal_security_group" {
-  description = "{{.SSHLBInternalDescription}}"
-  vpc_id      = "${aws_vpc.vpc.id}"
-
-  ingress {
-    security_groups = ["${aws_security_group.cf_ssh_lb_security_group.id}"]
-    protocol    = "tcp"
-    from_port   = 2222
-    to_port     = 2222
-  }
-
-  egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags {
-    Name = "${var.env_id}-cf-ssh-lb-internal-security-group"
-  }
-}
-
-output "cf_ssh_lb_internal_security_group" {
-  value="${aws_security_group.cf_ssh_lb_internal_security_group.id}"
-}
-
-resource "aws_elb" "cf_ssh_lb" {
-  name                      = "${var.short_env_id}-cf-ssh-lb"
-  cross_zone_load_balancing = true
-
-  health_check {
-    healthy_threshold   = 5
-    unhealthy_threshold = 2
-    interval            = 6
-    target              = "TCP:2222"
-    timeout             = 2
-  }
-
-  listener {
-    instance_port     = 2222
-    instance_protocol = "tcp"
-    lb_port           = 2222
-    lb_protocol       = "tcp"
-  }
-
-  security_groups = ["${aws_security_group.cf_ssh_lb_security_group.id}"]
-  subnets         = ["${aws_subnet.lb_subnets.*.id}"]
-}
-
-output "cf_ssh_lb_name" {
-  value = "${aws_elb.cf_ssh_lb.name}"
-}
-
-output "cf_ssh_lb_url" {
-  value = "${aws_elb.cf_ssh_lb.dns_name}"
-}
-
-resource "aws_security_group" "cf_router_lb_security_group" {
+resource "aws_security_group" "cf_router_and_ssh_lb_security_group" {
   description = "{{.RouterDescription}}"
   vpc_id      = "${aws_vpc.vpc.id}"
 
@@ -108,6 +23,13 @@ resource "aws_security_group" "cf_router_lb_security_group" {
     to_port     = 4443
   }
 
+  ingress {
+    cidr_blocks = ["0.0.0.0/0"]
+    protocol    = "tcp"
+    from_port   = 2222
+    to_port     = 2222
+  }
+
   egress {
     from_port = 0
     to_port = 0
@@ -116,25 +38,32 @@ resource "aws_security_group" "cf_router_lb_security_group" {
   }
 
   tags {
-    Name = "${var.env_id}-cf-router-lb-security-group"
+    Name = "${var.env_id}-cf-router-and-ssh-lb-security-group"
   }
 }
 
-output "cf_router_lb_security_group" {
-  value="${aws_security_group.cf_router_lb_security_group.id}"
+output "cf_router_and_ssh_lb_security_group" {
+  value="${aws_security_group.cf_router_and_ssh_lb_security_group.id}"
 }
 
-resource "aws_security_group" "cf_router_lb_internal_security_group" {
+resource "aws_security_group" "cf_router_and_ssh_lb_internal_security_group" {
   description = "{{.RouterInternalDescription}}"
   vpc_id      = "${aws_vpc.vpc.id}"
 
   ingress {
-    security_groups = ["${aws_security_group.cf_router_lb_security_group.id}"]
+    security_groups = ["${aws_security_group.cf_router_and_ssh_lb_security_group.id}"]
     protocol    = "tcp"
     from_port   = 80
     to_port     = 80
   }
 
+  ingress {
+    security_groups = ["${aws_security_group.cf_router_and_ssh_lb_security_group.id}"]
+    protocol    = "tcp"
+    from_port   = 2222
+    to_port     = 2222
+  }
+
   egress {
     from_port = 0
     to_port = 0
@@ -143,16 +72,16 @@ resource "aws_security_group" "cf_router_lb_internal_security_group" {
   }
 
   tags {
-    Name = "${var.env_id}-cf-router-lb-internal-security-group"
+    Name = "${var.env_id}-cf-router-and-ssh-lb-internal-security-group"
   }
 }
 
-output "cf_router_lb_internal_security_group" {
-  value="${aws_security_group.cf_router_lb_internal_security_group.id}"
+output "cf_router_and_ssh_lb_internal_security_group" {
+  value="${aws_security_group.cf_router_and_ssh_lb_internal_security_group.id}"
 }
 
-resource "aws_elb" "cf_router_lb" {
-  name                      = "${var.short_env_id}-cf-router-lb"
+resource "aws_elb" "cf_router_and_ssh_lb" {
+  name                      = "${var.short_env_id}-cf-router-and-ssh-lb"
   cross_zone_load_balancing = true
 
   health_check {
@@ -179,6 +108,13 @@ resource "aws_elb" "cf_router_lb" {
   }
 
   listener {
+    instance_port     = 2222
+    instance_protocol = "tcp"
+    lb_port           = 2222
+    lb_protocol       = "tcp"
+  }
+
+  listener {
     instance_port      = 80
     instance_protocol  = "tcp"
     lb_port            = 4443
@@ -186,16 +122,16 @@ resource "aws_elb" "cf_router_lb" {
     ssl_certificate_id = "${aws_iam_server_certificate.lb_cert.arn}"
   }
 
-  security_groups = ["${aws_security_group.cf_router_lb_security_group.id}"]
+  security_groups = ["${aws_security_group.cf_router_and_ssh_lb_security_group.id}"]
   subnets         = ["${aws_subnet.lb_subnets.*.id}"]
 }
 
-output "cf_router_lb_name" {
-  value = "${aws_elb.cf_router_lb.name}"
+output "cf_router_and_ssh_lb_name" {
+  value = "${aws_elb.cf_router_and_ssh_lb.name}"
 }
 
-output "cf_router_lb_url" {
-  value = "${aws_elb.cf_router_lb.dns_name}"
+output "cf_router_and_ssh_lb_url" {
+  value = "${aws_elb.cf_router_and_ssh_lb.dns_name}"
 }
 
 resource "aws_security_group" "cf_tcp_lb_security_group" {

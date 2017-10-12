@@ -88,7 +88,7 @@ func templatesBosh_directorTf() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "templates/bosh_director.tf", size: 2729, mode: os.FileMode(420), modTime: time.Unix(1507149571, 0)}
+	info := bindataFileInfo{name: "templates/bosh_director.tf", size: 2729, mode: os.FileMode(420), modTime: time.Unix(1507748147, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -108,7 +108,7 @@ func templatesCf_dnsTf() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "templates/cf_dns.tf", size: 2697, mode: os.FileMode(420), modTime: time.Unix(1507250584, 0)}
+	info := bindataFileInfo{name: "templates/cf_dns.tf", size: 2711, mode: os.FileMode(420), modTime: time.Unix(1507750350, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -128,7 +128,7 @@ func templatesCf_lbTf() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "templates/cf_lb.tf", size: 7299, mode: os.FileMode(420), modTime: time.Unix(1507249256, 0)}
+	info := bindataFileInfo{name: "templates/cf_lb.tf", size: 7641, mode: os.FileMode(420), modTime: time.Unix(1507750350, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -168,7 +168,7 @@ func templatesJumpboxTf() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "templates/jumpbox.tf", size: 361, mode: os.FileMode(420), modTime: time.Unix(1507149571, 0)}
+	info := bindataFileInfo{name: "templates/jumpbox.tf", size: 361, mode: os.FileMode(420), modTime: time.Unix(1507748147, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -246,11 +246,11 @@ func AssetNames() []string {
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
 	"templates/bosh_director.tf": templatesBosh_directorTf,
-	"templates/cf_dns.tf": templatesCf_dnsTf,
-	"templates/cf_lb.tf": templatesCf_lbTf,
-	"templates/concourse_lb.tf": templatesConcourse_lbTf,
-	"templates/jumpbox.tf": templatesJumpboxTf,
-	"templates/vars.tf": templatesVarsTf,
+	"templates/cf_dns.tf":        templatesCf_dnsTf,
+	"templates/cf_lb.tf":         templatesCf_lbTf,
+	"templates/concourse_lb.tf":  templatesConcourse_lbTf,
+	"templates/jumpbox.tf":       templatesJumpboxTf,
+	"templates/vars.tf":          templatesVarsTf,
 }
 
 // AssetDir returns the file names below a certain
@@ -292,14 +292,15 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
+
 var _bintree = &bintree{nil, map[string]*bintree{
 	"templates": &bintree{nil, map[string]*bintree{
 		"bosh_director.tf": &bintree{templatesBosh_directorTf, map[string]*bintree{}},
-		"cf_dns.tf": &bintree{templatesCf_dnsTf, map[string]*bintree{}},
-		"cf_lb.tf": &bintree{templatesCf_lbTf, map[string]*bintree{}},
-		"concourse_lb.tf": &bintree{templatesConcourse_lbTf, map[string]*bintree{}},
-		"jumpbox.tf": &bintree{templatesJumpboxTf, map[string]*bintree{}},
-		"vars.tf": &bintree{templatesVarsTf, map[string]*bintree{}},
+		"cf_dns.tf":        &bintree{templatesCf_dnsTf, map[string]*bintree{}},
+		"cf_lb.tf":         &bintree{templatesCf_lbTf, map[string]*bintree{}},
+		"concourse_lb.tf":  &bintree{templatesConcourse_lbTf, map[string]*bintree{}},
+		"jumpbox.tf":       &bintree{templatesJumpboxTf, map[string]*bintree{}},
+		"vars.tf":          &bintree{templatesVarsTf, map[string]*bintree{}},
 	}},
 }}
 
@@ -349,4 +350,3 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
-

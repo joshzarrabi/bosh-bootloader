@@ -109,7 +109,7 @@ func templatesNetwork_security_groupTf() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "templates/network_security_group.tf", size: 4362, mode: os.FileMode(420), modTime: time.Unix(1507153563, 0)}
+	info := bindataFileInfo{name: "templates/network_security_group.tf", size: 4362, mode: os.FileMode(420), modTime: time.Unix(1507748147, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

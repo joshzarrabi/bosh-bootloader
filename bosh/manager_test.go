@@ -69,12 +69,10 @@ director_ssl:
 
 	Describe("CreateDirector", func() {
 		BeforeEach(func() {
-			boshExecutor.DirectorInterpolateCall.Returns.Output = bosh.InterpolateOutput{
+			boshExecutor.CreateEnvCall.Returns.Output = bosh.CreateEnvOutput{
 				Manifest:  "some-manifest",
 				Variables: boshVars,
-			}
-			boshExecutor.CreateEnvCall.Returns.Output = bosh.CreateEnvOutput{
-				State: map[string]interface{}{"some-new-key": "some-new-value"}}
+				State:     map[string]interface{}{"some-new-key": "some-new-value"}}
 		})
 
 		var state storage.State
@@ -114,11 +112,13 @@ director_ssl:
 
 			Expect(logger.StepCall.Messages).To(gomegamatchers.ContainSequence([]string{"creating bosh director", "created bosh director"}))
 
-			Expect(boshExecutor.CreateEnvCall.CallCount).To(Equal(1))
-			Expect(boshExecutor.CreateEnvCall.Receives.Input.Deployment).To(Equal("director"))
-			Expect(boshExecutor.CreateEnvCall.Receives.Input.Directory).To(Equal("some-bbl-vars-dir"))
+			Expect(boshExecutor.DirectorInterpolateCall.CallCount).To(Equal(0))
 
-			Expect(boshExecutor.DirectorInterpolateCall.Receives.InterpolateInput.DeploymentVars).To(Equal(`internal_cidr: 10.0.0.0/24
+			Expect(boshExecutor.CreateEnvCall.CallCount).To(Equal(1))
+			Expect(boshExecutor.CreateEnvCall.Receives.Input.DeploymentName).To(Equal("director"))
+			Expect(boshExecutor.CreateEnvCall.Receives.Input.VarsDir).To(Equal("some-bbl-vars-dir"))
+
+			Expect(boshExecutor.CreateEnvCall.Receives.Input.DeploymentVars).To(Equal(`internal_cidr: 10.0.0.0/24
 internal_gw: 10.0.0.1
 internal_ip: 10.0.0.6
 director_name: bosh-some-env-id
@@ -130,8 +130,8 @@ tags:
 project_id: some-project-id
 gcp_credentials_json: some-credential-json
 `))
-			Expect(boshExecutor.DirectorInterpolateCall.Receives.InterpolateInput.VarsDir).To(Equal("some-bbl-vars-dir"))
-			Expect(boshExecutor.DirectorInterpolateCall.Receives.InterpolateInput.DeploymentDir).To(Equal("some-director-deployment-dir"))
+			Expect(boshExecutor.CreateEnvCall.Receives.Input.VarsDir).To(Equal("some-bbl-vars-dir"))
+			Expect(boshExecutor.CreateEnvCall.Receives.Input.DeploymentDir).To(Equal("some-director-deployment-dir"))
 
 			Expect(socks5Proxy.StartCall.CallCount).To(Equal(0))
 			Expect(boshExecutor.JumpboxInterpolateCall.CallCount).To(Equal(0))
@@ -154,17 +154,6 @@ gcp_credentials_json: some-credential-json
 		})
 
 		Context("when an error occurs", func() {
-			Context("when the executor's interpolate call fails", func() {
-				BeforeEach(func() {
-					boshExecutor.DirectorInterpolateCall.Returns.Error = errors.New("failed to interpolate")
-				})
-
-				It("returns an error", func() {
-					_, err := boshManager.CreateDirector(storage.State{}, terraformOutputs)
-					Expect(err).To(MatchError("failed to interpolate"))
-				})
-			})
-
 			Context("when get vars dir fails", func() {
 				It("returns an error", func() {
 					stateStore.GetVarsDirCall.Returns.Error = errors.New("pineapple")
@@ -191,17 +180,6 @@ gcp_credentials_json: some-credential-json
 				It("returns an error", func() {
 					_, err := boshManager.CreateDirector(storage.State{}, terraformOutputs)
 					Expect(err).To(MatchError("Create director env: lychee"))
-				})
-			})
-
-			Context("when interpolate outputs invalid yaml", func() {
-				BeforeEach(func() {
-					boshExecutor.DirectorInterpolateCall.Returns.Output.Variables = "%%%"
-				})
-
-				It("returns an error", func() {
-					_, err := boshManager.CreateDirector(storage.State{}, terraformOutputs)
-					Expect(err).To(MatchError("Get director vars: yaml: could not find expected directive name"))
 				})
 			})
 		})
@@ -258,9 +236,12 @@ project_id: some-project-id
 gcp_credentials_json: some-credential-json
 `
 
-			boshExecutor.JumpboxInterpolateCall.Returns.Output = bosh.JumpboxInterpolateOutput{
+			boshExecutor.CreateEnvCall.Returns.Output = bosh.CreateEnvOutput{
 				Manifest:  "name: jumpbox",
 				Variables: "jumpbox_ssh:\n  private_key: some-jumpbox-private-key",
+				State: map[string]interface{}{
+					"some-new-key": "some-new-value",
+				},
 			}
 		})
 
@@ -292,22 +273,16 @@ gcp_credentials_json: some-credential-json
 
 		Context("when bosh director is created after jumpbox", func() {
 			It("returns a bbl state with bosh and jumpbox deployment values", func() {
-				boshExecutor.CreateEnvCall.Returns.Output = bosh.CreateEnvOutput{
-					State: map[string]interface{}{
-						"some-new-key": "some-new-value",
-					},
-				}
-
 				state, err := boshManager.CreateJumpbox(state, terraformOutputs)
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(stateStore.GetVarsDirCall.CallCount).To(Equal(1))
-				Expect(boshExecutor.JumpboxInterpolateCall.Receives.InterpolateInput.VarsDir).To(Equal("some-bbl-vars-dir"))
-				Expect(boshExecutor.JumpboxInterpolateCall.Receives.InterpolateInput.DeploymentDir).To(Equal("some-jumpbox-deployment-dir"))
-				Expect(boshExecutor.JumpboxInterpolateCall.Receives.InterpolateInput.IAAS).To(Equal("gcp"))
+				Expect(boshExecutor.JumpboxInterpolateCall.CallCount).To(Equal(0))
 
-				Expect(boshExecutor.CreateEnvCall.Receives.Input.Deployment).To(Equal("jumpbox"))
-				Expect(boshExecutor.CreateEnvCall.Receives.Input.Directory).To(Equal("some-bbl-vars-dir"))
+				Expect(stateStore.GetVarsDirCall.CallCount).To(Equal(1))
+				Expect(boshExecutor.CreateEnvCall.Receives.Input.VarsDir).To(Equal("some-bbl-vars-dir"))
+				Expect(boshExecutor.CreateEnvCall.Receives.Input.DeploymentDir).To(Equal("some-jumpbox-deployment-dir"))
+				Expect(boshExecutor.CreateEnvCall.Receives.Input.IAAS).To(Equal("gcp"))
+				Expect(boshExecutor.CreateEnvCall.Receives.Input.DeploymentName).To(Equal("jumpbox"))
 
 				Expect(state).To(Equal(storage.State{
 					IAAS:  "gcp",
@@ -330,15 +305,6 @@ gcp_credentials_json: some-credential-json
 		})
 
 		Context("when an error occurs", func() {
-			Context("when the jumpbox variables cannot be parsed", func() {
-				It("returns an error", func() {
-					boshExecutor.JumpboxInterpolateCall.Returns.Output.Variables = "%%%"
-
-					_, err := boshManager.CreateJumpbox(state, terraformOutputs)
-					Expect(err).To(MatchError("jumpbox key: yaml: could not find expected directive name"))
-				})
-			})
-
 			Context("when get vars dir fails", func() {
 				It("returns an error", func() {
 					stateStore.GetVarsDirCall.Returns.Error = errors.New("kiwi")

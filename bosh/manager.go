@@ -154,39 +154,22 @@ func (m *Manager) CreateJumpbox(state storage.State, terraformOutputs terraform.
 		return storage.State{}, fmt.Errorf("Get deployment dir: %s", err)
 	}
 
-	iaasInputs := InterpolateInput{
+	osUnsetenv("BOSH_ALL_PROXY")
+	createEnvOutputs, err := m.executor.CreateEnv(CreateEnvInput{
+		DeploymentName: "jumpbox",
 		DeploymentDir:  deploymentDir,
 		VarsDir:        varsDir,
 		IAAS:           state.IAAS,
-		DeploymentVars: m.GetJumpboxDeploymentVars(state, terraformOutputs),
+		State:          state.Jumpbox.State,
 		Variables:      state.Jumpbox.Variables,
-	}
-
-	interpolateOutputs, err := m.executor.JumpboxInterpolate(iaasInputs)
-	if err != nil {
-		return storage.State{}, fmt.Errorf("Jumpbox interpolate: %s", err)
-	}
-
-	variables, err := yaml.Marshal(interpolateOutputs.Variables)
-	if err != nil {
-		return storage.State{}, fmt.Errorf("Marshal yaml: %s", err)
-	}
-
-	osUnsetenv("BOSH_ALL_PROXY")
-	createEnvOutputs, err := m.executor.CreateEnv(CreateEnvInput{
-		Deployment: "jumpbox",
-		Directory:  varsDir,
-		Manifest:   interpolateOutputs.Manifest,
-		State:      state.Jumpbox.State,
-		Variables:  string(variables),
 	})
 	switch err.(type) {
 	case CreateEnvError:
 		ceErr := err.(CreateEnvError)
 		state.Jumpbox = storage.Jumpbox{
-			Variables: interpolateOutputs.Variables,
+			Variables: createEnvOutputs.Variables,
 			State:     ceErr.BOSHState(),
-			Manifest:  interpolateOutputs.Manifest,
+			Manifest:  createEnvOutputs.Manifest,
 		}
 		return storage.State{}, fmt.Errorf("Create jumpbox env: %s", NewManagerCreateError(state, err))
 	case error:
@@ -195,14 +178,14 @@ func (m *Manager) CreateJumpbox(state storage.State, terraformOutputs terraform.
 	m.logger.Step("created jumpbox")
 
 	state.Jumpbox = storage.Jumpbox{
-		Variables: interpolateOutputs.Variables,
+		Variables: createEnvOutputs.Variables,
 		State:     createEnvOutputs.State,
-		Manifest:  interpolateOutputs.Manifest,
+		Manifest:  createEnvOutputs.Manifest,
 		URL:       terraformOutputs.GetString("jumpbox_url"),
 	}
 
 	m.logger.Step("starting socks5 proxy to jumpbox")
-	jumpboxPrivateKey, err := getJumpboxPrivateKey(interpolateOutputs.Variables)
+	jumpboxPrivateKey, err := getJumpboxPrivateKey(createEnvOutputs.Variables)
 	if err != nil {
 		return storage.State{}, fmt.Errorf("jumpbox key: %s", err)
 	}
@@ -231,42 +214,30 @@ func (m *Manager) CreateDirector(state storage.State, terraformOutputs terraform
 		return storage.State{}, fmt.Errorf("Get deployment dir: %s", err)
 	}
 
-	iaasInputs := InterpolateInput{
-		DeploymentDir:  directorDeploymentDir,
-		VarsDir:        varsDir,
-		IAAS:           state.IAAS,
-		DeploymentVars: m.GetDirectorDeploymentVars(state, terraformOutputs),
-		Variables:      state.BOSH.Variables,
-		OpsFile:        state.BOSH.UserOpsFile,
-	}
-
-	interpolateOutputs, err := m.executor.DirectorInterpolate(iaasInputs)
-	if err != nil {
-		return storage.State{}, err
-	}
-
 	createEnvOutputs, err := m.executor.CreateEnv(CreateEnvInput{
-		Deployment: "director",
-		Directory:  varsDir,
-		Manifest:   interpolateOutputs.Manifest,
-		State:      state.BOSH.State,
-		Variables:  interpolateOutputs.Variables,
+		DeploymentName: "director",
+		DeploymentDir:  directorDeploymentDir,
+		DeploymentVars: m.GetDirectorDeploymentVars(state, terraformOutputs),
+		IAAS:           state.IAAS,
+		State:          state.BOSH.State,
+		Variables:      state.BOSH.Variables,
+		VarsDir:        varsDir,
 	})
 
 	switch err.(type) {
 	case CreateEnvError:
 		ceErr := err.(CreateEnvError)
 		state.BOSH = storage.BOSH{
-			Variables: interpolateOutputs.Variables,
+			Variables: createEnvOutputs.Variables,
 			State:     ceErr.BOSHState(),
-			Manifest:  interpolateOutputs.Manifest,
+			Manifest:  createEnvOutputs.Manifest,
 		}
 		return storage.State{}, NewManagerCreateError(state, err)
 	case error:
 		return storage.State{}, fmt.Errorf("Create director env: %s", err)
 	}
 
-	directorVars, err := getDirectorVars(interpolateOutputs.Variables)
+	directorVars, err := getDirectorVars(createEnvOutputs.Variables)
 	if err != nil {
 		return storage.State{}, fmt.Errorf("Get director vars: %s", err)
 	}
@@ -279,9 +250,9 @@ func (m *Manager) CreateDirector(state storage.State, terraformOutputs terraform
 		DirectorSSLCA:          directorVars.directorSSLCA,
 		DirectorSSLCertificate: directorVars.directorSSLCertificate,
 		DirectorSSLPrivateKey:  directorVars.directorSSLPrivateKey,
-		Variables:              interpolateOutputs.Variables,
+		Variables:              createEnvOutputs.Variables,
 		State:                  createEnvOutputs.State,
-		Manifest:               interpolateOutputs.Manifest,
+		Manifest:               createEnvOutputs.Manifest,
 		UserOpsFile:            state.BOSH.UserOpsFile,
 	}
 

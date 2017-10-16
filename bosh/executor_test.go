@@ -414,11 +414,11 @@ var _ = Describe("Executor", func() {
 			executor = bosh.NewExecutor(cmd, ioutil.ReadFile, json.Unmarshal, json.Marshal, ioutil.WriteFile)
 
 			createEnvInput = bosh.CreateEnvInput{
-				Deployment: "some-deployment",
-				Directory:  varsDir,
-				Manifest:   "some-manifest",
-				Variables:  "some-variables",
-				State:      map[string]interface{}{},
+				DeploymentName: "some-deployment",
+				VarsDir:        varsDir,
+				Manifest:       "some-manifest",
+				Variables:      "some-variables",
+				State:          map[string]interface{}{},
 			}
 
 			manifestPath = fmt.Sprintf("%s/some-deployment-manifest.yml", varsDir)
@@ -459,11 +459,11 @@ var _ = Describe("Executor", func() {
 		Context("failure cases", func() {
 			createEnvDeleteEnvFailureCases(func(executor bosh.Executor) error {
 				createEnvInput := bosh.CreateEnvInput{
-					Deployment: "some-deployment",
-					Directory:  varsDir,
-					Manifest:   "some-manifest",
-					Variables:  "some-variables",
-					State:      map[string]interface{}{},
+					DeploymentName: "some-deployment",
+					VarsDir:        varsDir,
+					Manifest:       "some-manifest",
+					Variables:      "some-variables",
+					State:          map[string]interface{}{},
 				}
 				_, err := executor.CreateEnv(createEnvInput)
 				return err

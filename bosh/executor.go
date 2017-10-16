@@ -41,15 +41,20 @@ type JumpboxInterpolateOutput struct {
 }
 
 type CreateEnvInput struct {
-	Deployment string
-	Directory  string
-	Manifest   string
-	Variables  string
-	State      map[string]interface{}
+	DeploymentName string
+	DeploymentDir  string
+	DeploymentVars string
+	VarsDir        string
+	IAAS           string
+	Manifest       string
+	Variables      string
+	State          map[string]interface{}
 }
 
 type CreateEnvOutput struct {
-	State map[string]interface{}
+	Manifest  string
+	Variables string
+	State     map[string]interface{}
 }
 
 type DeleteEnvInput struct {
@@ -249,14 +254,14 @@ func (e Executor) DirectorInterpolate(input InterpolateInput) (InterpolateOutput
 }
 
 func (e Executor) CreateEnv(createEnvInput CreateEnvInput) (CreateEnvOutput, error) {
-	err := e.writePreviousFiles(createEnvInput.State, createEnvInput.Variables, createEnvInput.Manifest, createEnvInput.Directory, createEnvInput.Deployment)
+	err := e.writePreviousFiles(createEnvInput.State, createEnvInput.Variables, createEnvInput.Manifest, createEnvInput.VarsDir, createEnvInput.DeploymentName)
 	if err != nil {
 		return CreateEnvOutput{}, err
 	}
 
-	statePath := filepath.Join(createEnvInput.Directory, fmt.Sprintf("%s-state.json", createEnvInput.Deployment))
-	variablesPath := filepath.Join(createEnvInput.Directory, fmt.Sprintf("%s-variables.yml", createEnvInput.Deployment))
-	manifestPath := filepath.Join(createEnvInput.Directory, fmt.Sprintf("%s-manifest.yml", createEnvInput.Deployment))
+	statePath := filepath.Join(createEnvInput.VarsDir, fmt.Sprintf("%s-state.json", createEnvInput.DeploymentName))
+	variablesPath := filepath.Join(createEnvInput.VarsDir, fmt.Sprintf("%s-variables.yml", createEnvInput.DeploymentName))
+	manifestPath := filepath.Join(createEnvInput.VarsDir, fmt.Sprintf("%s-manifest.yml", createEnvInput.DeploymentName))
 
 	args := []string{
 		"create-env", manifestPath,
@@ -264,7 +269,7 @@ func (e Executor) CreateEnv(createEnvInput CreateEnvInput) (CreateEnvOutput, err
 		"--state", statePath,
 	}
 
-	err = e.command.Run(os.Stdout, createEnvInput.Directory, args)
+	err = e.command.Run(os.Stdout, createEnvInput.VarsDir, args)
 	if err != nil {
 		state, readErr := e.readBOSHState(statePath)
 		if readErr != nil {
@@ -283,7 +288,9 @@ func (e Executor) CreateEnv(createEnvInput CreateEnvInput) (CreateEnvOutput, err
 	}
 
 	return CreateEnvOutput{
-		State: state,
+		Variables: createEnvInput.Variables,
+		Manifest:  createEnvInput.Manifest,
+		State:     state,
 	}, nil
 }
 

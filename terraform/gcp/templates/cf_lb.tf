@@ -279,22 +279,43 @@ resource "google_compute_backend_service" "router-lb-backend-service" {
   timeout_sec = 900
   enable_cdn  = false
   backend {
-    group = "${google_compute_instance_group.router-lb.0.self_link}"
+    group = "${google_compute_instance_group.router-lb-0.self_link}"
   }
   backend {
-    group = "${google_compute_instance_group.router-lb.1.self_link}"
+    group = "${google_compute_instance_group.router-lb-1.self_link}"
   }
   backend {
-    group = "${google_compute_instance_group.router-lb.2.self_link}"
+    group = "${google_compute_instance_group.router-lb-2.self_link}"
   }
   health_checks = ["${google_compute_health_check.cf-public-health-check.self_link}"]
 }
 
-resource "google_compute_instance_group" "router-lb" {
-  count       = "${length(var.availability_zones)}"
-  name        = "${var.env_id}-router-lb-${(count.index)}-${element(var.availability_zones, count.index)}"
+resource "google_compute_instance_group" "router-lb-0" {
+  name        = "${var.env_id}-router-lb-0-${element(var.availability_zones, 0)}"
   description = "terraform generated instance group that is multi-zone for https loadbalancing"
-  zone        = "${element(var.availability_zones, count.index)}"
+  zone        = "${element(var.availability_zones, 0)}"
+
+  named_port {
+    name = "https"
+    port = "443"
+  }
+}
+
+resource "google_compute_instance_group" "router-lb-1" {
+  name        = "${var.env_id}-router-lb-1-${element(var.availability_zones, 1)}"
+  description = "terraform generated instance group that is multi-zone for https loadbalancing"
+  zone        = "${element(var.availability_zones, 1)}"
+
+  named_port {
+    name = "https"
+    port = "443"
+  }
+}
+
+resource "google_compute_instance_group" "router-lb-2" {
+  name        = "${var.env_id}-router-lb-2-${element(var.availability_zones, 2)}"
+  description = "terraform generated instance group that is multi-zone for https loadbalancing"
+  zone        = "${element(var.availability_zones, 2)}"
 
   named_port {
     name = "https"

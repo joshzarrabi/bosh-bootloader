@@ -71,11 +71,8 @@ var _ = Describe("plan", func() {
 				"template.tf",
 			})
 			checkExists(filepath.Join(stateDir, "vars"), []string{
-				// "bosh-state.json",
 				"director-variables.yml",
-				// "jumpbox-state.json",
 				"jumpbox-variables.yml",
-				// "terraform.tfstate",
 				"user-ops-file.yml",
 			})
 		})

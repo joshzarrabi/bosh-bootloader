@@ -113,7 +113,7 @@ func main() {
 		inputGenerator = azureterraform.NewInputGenerator()
 	case "gcp":
 		templateGenerator = gcpterraform.NewTemplateGenerator()
-		inputGenerator = gcpterraform.NewInputGenerator()
+		inputGenerator = gcpterraform.NewInputGenerator(gcpClient)
 	}
 
 	terraformManager := terraform.NewManager(terraform.NewManagerArgs{

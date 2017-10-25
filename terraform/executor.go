@@ -72,6 +72,8 @@ func (e Executor) Init(template, prevTFState string) error {
 
 	tfStatePath := filepath.Join(varsDir, "terraform.tfstate")
 	if prevTFState != "" {
+		// TODO: this should live in a central state migration package
+		// to migrate state from previous bbl versions
 		err = writeFile(tfStatePath, []byte(prevTFState), os.ModePerm)
 		if err != nil {
 			return fmt.Errorf("Write previous terraform state: %s", err)

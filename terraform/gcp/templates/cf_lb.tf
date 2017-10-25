@@ -6,6 +6,10 @@ variable "ssl_certificate_private_key" {
   type = "string"
 }
 
+variable "availability_zones" {
+  type = "list"
+}
+
 output "router_backend_service" {
   value = "${google_compute_backend_service.router-lb-backend-service.name}"
 }
@@ -266,4 +270,34 @@ resource "google_compute_forwarding_rule" "credhub" {
   port_range  = "8844"
   ip_protocol = "TCP"
   ip_address  = "${google_compute_address.credhub.address}"
+}
+
+resource "google_compute_backend_service" "router-lb-backend-service" {
+  name        = "${var.env_id}-router-lb"
+  port_name   = "https"
+  protocol    = "HTTPS"
+  timeout_sec = 900
+  enable_cdn  = false
+  backend {
+    group = "${google_compute_instance_group.router-lb.0.self_link}"
+  }
+  backend {
+    group = "${google_compute_instance_group.router-lb.1.self_link}"
+  }
+  backend {
+    group = "${google_compute_instance_group.router-lb.2.self_link}"
+  }
+  health_checks = ["${google_compute_health_check.cf-public-health-check.self_link}"]
+}
+
+resource "google_compute_instance_group" "router-lb" {
+  count       = "${length(var.availability_zones)}"
+  name        = "${var.env_id}-router-lb-${(count.index)}-${element(var.availability_zones, count.index)}"
+  description = "terraform generated instance group that is multi-zone for https loadbalancing"
+  zone        = "${element(var.availability_zones, count.index)}"
+
+  named_port {
+    name = "https"
+    port = "443"
+  }
 }

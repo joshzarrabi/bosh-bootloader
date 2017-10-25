@@ -46,32 +46,4 @@ var _ = Describe("TemplateGenerator", func() {
 			Entry("when a cf lb type is provided with a domain", "fixtures/gcp_template_cf_lb_dns.tf", "some-region", "cf", "some-domain"),
 		)
 	})
-
-	Describe("GenerateBackendService", func() {
-		BeforeEach(func() {
-			var err error
-			expectedTemplate, err = ioutil.ReadFile("fixtures/backend_service.tf")
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		It("returns a backend service terraform template", func() {
-			template := templateGenerator.GenerateBackendService(zones)
-
-			Expect(template).To(Equal(string(expectedTemplate)))
-		})
-	})
-
-	Describe("GenerateInstanceGroups", func() {
-		BeforeEach(func() {
-			var err error
-			expectedTemplate, err = ioutil.ReadFile("fixtures/instance_groups.tf")
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		It("returns a backend service terraform template", func() {
-			template := templateGenerator.GenerateInstanceGroups(zones)
-
-			Expect(template).To(Equal(string(expectedTemplate)))
-		})
-	})
 })
